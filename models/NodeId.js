@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const dbConnections = require('../handlers/dbConnections');
+const { entryDb } = require('../handlers/dbConnections');
 
 const nodeSchema = new mongoose.Schema({
   node_id: String,
@@ -10,4 +10,4 @@ const nodeSchema = new mongoose.Schema({
   sensors: [String]
 });
 
-module.exports = dbConnections.entryDb.model('NodeId', nodeSchema);
+module.exports = entryDb.model('NodeId', nodeSchema);

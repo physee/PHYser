@@ -1,27 +1,17 @@
 const { DateTime } = require('luxon');
 const mongoose = require('mongoose');
 const { idFormatting, calculateDuration, defineScope, defineAttributes } = require('../handlers/rulesHandlers');
-const { entryDb } = require('../handlers/dbConnections');
-// const NodeId = entryDb.model('NodeId');
-const Window = entryDb.model('Window');
 
-
-const getStartandEndDate = (query) => {
-  // 1. get duration
-  // if there is interval supplied, use the duration according to interval for the start & endDate
-  // else use default duration (day: 180 days)
-  const duration = (query && query.interval) ? calculateDuration(query.interval) : calculateDuration();
-  // 2. calculate start & end date
-  const ed = (query && query.startDate) ? DateTime.fromMillis((parseInt(query.endDate))) : DateTime.fromMillis((new Date).getTime());
-  const sd = (query && query.endDate) ?  DateTime.fromMillis((parseInt(query.startDate))) : DateTime.fromMillis((ed - duration));
-  return { sd, ed };
-}
-
-const getInterval = (query) => {
-  if (query && query.interval) {
-    return query.interval;
-  }
-  return 'day';
+exports.queryStats = async (scope, id, query) => {
+  const Database = defineScope(scope);
+  const nodeIds = (scope === 'window') ? getWindowIds(id) : await getNodeIds(Database, id);
+  const { sd, ed } = getStartandEndDate(query);
+  const checkedInterval = getInterval(query);
+  const attributes = defineAttributes(query);
+  // 2. start query
+  const result = (scope === 'window') ? await getStatsWindow(nodeIds, sd, ed, checkedInterval, attributes) : await getStats(Database, nodeIds, sd, ed, checkedInterval, attributes);
+  // 3. 'clean' the returned data
+  return result;
 };
 
 const getWindowIds = (id) => {
@@ -31,6 +21,7 @@ const getWindowIds = (id) => {
   const nodeIds = ids.map(id => mongoose.Types.ObjectId(id));
   return nodeIds;
 }
+
 const getNodeIds = async (Database, id) => {
   const ids = idFormatting(id);
   const sensors = await Database.find({ _id: { $in: ids }})
@@ -54,35 +45,36 @@ const getNodeIds = async (Database, id) => {
   return nodeIds;
 }
 
-// querying
-exports.queryInfo = async (scope, id) => {
-  const Database = defineScope(scope);
-  const ids = idFormatting(id);
-  const result = (scope === 'window') ? await getWindowInfo(ids, Database) : await getInfo(ids, Database);
-  return result;
+const getStartandEndDate = (query) => {
+  // 1. get duration
+  // if there is interval supplied, use the duration according to interval for the start & endDate
+  // else use default duration (day: 180 days)
+  const duration = (query && query.interval) ? calculateDuration(query.interval) : calculateDuration();
+  // 2. calculate start & end date
+  const ed = (query && query.startDate) ? DateTime.fromMillis((parseInt(query.endDate))) : DateTime.fromMillis((new Date).getTime());
+  const sd = (query && query.endDate) ?  DateTime.fromMillis((parseInt(query.startDate))) : DateTime.fromMillis((ed - duration));
+  return { sd, ed };
 }
-exports.queryStats = async (scope, id, query) => {
-  const Database = defineScope(scope);
-  const nodeIds = (scope === 'window') ? getWindowIds(id) : await getNodeIds(Database, id);
-  const { sd, ed } = getStartandEndDate(query);
-  const checkedInterval = getInterval(query);
-  const attributes = defineAttributes(query);
-  // 2. start query
-  const result = (scope === 'window') ? await getStatsWindow(nodeIds, sd, ed, checkedInterval, attributes) : await getStats(Database, nodeIds, sd, ed, checkedInterval, attributes);
-  // 3. 'clean' the returned data
-  return result;
+
+const getInterval = (query) => {
+  if (query && query.interval) {
+    return query.interval;
+  }
+  return 'day';
 };
 
-const getWindowInfo = async (ids, Database) => {
-  const result = await Database.find({ _id: { $in: ids }});
-  return result;
+const defineTime = (interval) => {
+  // interval = year / month/ week/ day/ hour/ minute
+  const year = { $year: '$entry.data.time' };
+  const month = !(interval === 'year') ? { $month: '$entry.data.time' } : null;
+  const week = (interval === 'year') || (interval === 'month') ? null : {  $week: '$entry.data.time' } ;
+  const day = (interval === 'year') || (interval === 'month') || (interval === 'week') ? null : { $dayOfMonth: '$entry.data.time' };
+  const hour = (interval === 'hour') || (interval === 'minute') || (interval === 'live') ? { $hour: '$entry.data.time' } : null;
+  const minute = (interval === 'minute') || (interval === 'live') ? { $minute: '$entry.data.time' } : null;
+  return { year, month, week, day, hour, minute };
 }
-const getInfo = async (ids, Database) => {
-  const result = await Database.find({ _id: { $in: ids }})
-  .populate('windowIds', 'glassMerk')
 
-  return result;
-}
+
 const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes) => {
   const { year, month, week, day, hour, minute } = defineTime(interval);
   const [ solar, cons, temp, lux, volt ] = attributes;
@@ -369,18 +361,6 @@ const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes)
   return dataset;
 }
 
-
-
-const defineTime = (interval) => {
-  // interval = year / month/ week/ day/ hour/ minute
-  const year = { $year: '$entry.data.time' };
-  const month = !(interval === 'year') ? { $month: '$entry.data.time' } : null;
-  const week = (interval === 'year') || (interval === 'month') ? null : {  $week: '$entry.data.time' } ;
-  const day = (interval === 'year') || (interval === 'month') || (interval === 'week') ? null : { $dayOfMonth: '$entry.data.time' };
-  const hour = (interval === 'hour') || (interval === 'minute') || (interval === 'live') ? { $hour: '$entry.data.time' } : null;
-  const minute = (interval === 'minute') || (interval === 'live') ? { $minute: '$entry.data.time' } : null;
-  return { year, month, week, day, hour, minute };
-}
 
 const getStats = async (Database, nodeIds, startDate, endDate, interval, attributes) => {
   const { year, month, week, day, hour, minute } = defineTime(interval);
