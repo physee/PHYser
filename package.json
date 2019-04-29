@@ -1,0 +1,38 @@
+{
+  "name": "PHY.ser",
+  "version": "0.0.1",
+  "description": "An app showing performance of PowerWindow",
+  "main": "app.js",
+  "dependencies": {
+    "acorn": "^6.1.0",
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.5",
+    "dotenv": "^4.0.0",
+    "express": "^4.16.4",
+    "express-validator": "^5.3.0",
+    "jsonwebtoken": "^8.4.0",
+    "luxon": "^1.8.1",
+    "md5": "^2.2.1",
+    "moment": "^2.22.1",
+    "mongoose": "^4.13.7",
+    "mongoose-mongodb-errors": "0.0.2",
+    "passport": "^0.4.0",
+    "passport-jwt": "^4.0.0",
+    "passport-local": "^1.0.0",
+    "passport-local-mongoose": "^5.0.1",
+    "pug": "^2.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^5.12.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0",
+    "nodemon": "^1.18.7",
+    "prettier": "^1.15.3"
+  },
+  "scripts": {
+    "start": "node ./start.js",
+    "dev": "nodemon ./start.js --ignore public/"
+  },
+  "author": "Pim Rutgers <pim@physee.eu> (https://github.com/physee)",
+  "license": "AGPL-3.0"
+}
