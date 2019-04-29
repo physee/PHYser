@@ -2,10 +2,13 @@ doctype html
 html
   head
     block head
+      link(rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.1/semantic.min.css")
+      link(rel="stylesheet" type="text/css" href="/dist/style.css")
+      link(rel="stylesheet" href="https://use.typekit.net/sjm2luv.css")
       title= `${title}`
   body
     .app-header
     .app-cotent
       block content
+        head.ui.three.item.menu.secondary.huge.fixed
         h1 You seem to have navigated to a page without content
-  

@@ -1,11 +1,17 @@
 // import environmental variables from our variables.env file
 require('dotenv').config({ path: 'variables.env' });
 
-// Connect to multiple MongoDB
+
 // TODO
 
 // Require the models
-
+require('./models/Entry');
+require('./models/NodeId');
+require('./models/Project');
+require('./models/Installation');
+require('./models/Area');
+require('./models/Window');
+require('./models/Sensor');
 
 
 // Start our app
