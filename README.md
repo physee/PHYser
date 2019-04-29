@@ -1,2 +1,2 @@
 # PHYser
-A app to show living lab data
+An app to show living lab data
