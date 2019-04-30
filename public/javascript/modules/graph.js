@@ -4,19 +4,28 @@ let view = 'window';
 $('#windowView').on('click', () => {
     const date= $('#date').calendar('get date');
     view = 'window';
+    $('#areaView').removeClass('.selected');
+    $('#windowView').addClass('.selected');
+    $('#projectView').removeClass('.selected');
     updateChart(view, dateView, date);
   
 })
      
   $('#areaView').on('click',() => {
     const date= $('#date').calendar('get date');
-    view = 'area'
+    view = 'area';
+    $('#areaView').addClass('.selected');
+    $('#windowView').removeClass('.selected');
+    $('#projectView').removeClass('.selected');
     updateChart(view, dateView, date);
 })
   
   $('#projectView').on('click', () => {
     const date= $('#date').calendar('get date');
     view = 'installation'
+    $('#areaView').removeClass('.selected');
+    $('#windowView').removeClass('.selected');
+    $('#projectView').addClass('.selected');
     updateChart(view, dateView, date);
 })
 $('#date').calendar({

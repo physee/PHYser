@@ -12,13 +12,12 @@ router.post('/login', authController.login);
 router.get('/logout', authController.logout);
 // 2. get data from database
 
-router.get('/:scope/live', catchErrors(databaseController.getLiveStatsById));
-router.get('/:scope/stats', catchErrors(databaseController.getStatsById));
+router.get('/:scope/live', catchErrors(databaseController.getLiveStats));
+router.get('/:scope/stats', catchErrors(databaseController.getStats));
 
 
 // 2. render views
 router.get('/', authController.isLoggedIn, viewController.history);
-router.get('/dashboard', catchErrors(viewController.dashboard));
 
 
 module.exports = router;

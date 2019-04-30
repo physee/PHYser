@@ -754,7 +754,7 @@ const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes)
       $project: {
         _id: {
           id: '$_id.id',
-          name: '$_id.glassMerk',
+          name: '$_id.name',
           locationId: '$_id.location',
           nodeID: '$_id.sensor',
         },
@@ -905,8 +905,7 @@ const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes)
       $group: {
         _id: {
           id: '$_id.id',
-          name: '$_id.locationId',
-          glassMerk: '$_id.name',
+          name: '$_id.name',
           nodeId: '$_id.nodID',
         },
         data: {
@@ -1055,7 +1054,7 @@ const getStats = async (Database, nodeIds, startDate, endDate, interval, attribu
      $project: {
        _id: {
          id: '$_id.id',
-         name: '$_id.glassMerk',
+         name: '$_id.name',
          locationId: '$_id.location',
          nodeID: '$_id.sensor',
        },
@@ -1206,8 +1205,7 @@ const getStats = async (Database, nodeIds, startDate, endDate, interval, attribu
      $group: {
        _id: {
          id: '$_id.id',
-         name: '$_id.locationId',
-         glassMerk: '$_id.name',
+         name: '$_id.name',
          nodeId: '$_id.nodID',
        },
        data: {
