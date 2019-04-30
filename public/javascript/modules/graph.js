@@ -128,7 +128,7 @@ function updateChart(view, dateView , date) {
 }
 
 function formulateQueryUrl(interval, startDate, endDate, view) {
-    const baseUrl = 'http://localhost:7777';
+    const baseUrl = 'http://hackathon.physee.eu';
     return `${baseUrl}/${view}/stats?startDate=${startDate}&endDate=${endDate}&interval=${interval}`;
     
 }
