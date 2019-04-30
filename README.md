@@ -6,13 +6,13 @@
 
 Our team has decided to leverage MongoDB's quick prototyping capabilities together with it's flexibility in data storage for this project. As the specifications of our sensor data is still evolving on a monthly basis MongoDB offers great flexibility with it's NoSQL database structure. With the great available tools in the community it was easy to quickly prototype our database and app idea.
 
-## PHYSEE HQ LivingLab
+## PHYSEE HQ LivingLab Monitoring
 
-On top of our new HQ located on the Delft Campus we constructed our LivingLab. The glass addition on the roof of our building functions in our day-to-day worklife as our lunch/yoga/workshop area, but it has a double function. The windows are easily replaceble, making it a perfect location to not only test our own products but also 
+On top of our new HQ located on the Delft Campus we constructed our LivingLab. The glass addition on the roof of our building functions in our day-to-day worklife as our lunch/yoga/workshop area, but it has a double function. The windows are easily replaceble, making it a perfect location to not only test our own products but also test third party products. We want to create an application and API that can show all our sensor data.
 
 ## Software stack
 
-For quick prototyping and due to existing knowledge in our team we opted to develop the app in NodeJS. This allows us to leverage the NodeJS ecosystem for quick web-app development with packages like [ExperssJS](https://expressjs.com) for the web server and the excellent [Mongoose](https://mongoosejs.com) package available to interface with MongoDB straight from NodeJS. We use [Pug](https://pugjs.org/api/getting-started.html) as our templating language and use the amazing [Highcharts](https://www.highcharts.com) for our graphs in the front-end. To round of we use the [Semantic-UI](TODOLINKNEEDED) CSS framework to give a consistent UI feel.
+For quick prototyping and due to existing knowledge in our team we opted to develop the app in NodeJS. This allows us to leverage the NodeJS ecosystem for quick web-app development with packages like [ExperssJS](https://expressjs.com) for the web server and the excellent [Mongoose](https://mongoosejs.com) package available to interface with MongoDB straight from NodeJS. We use [Pug](https://pugjs.org/api/getting-started.html) as our templating language and use the amazing [Highcharts](https://www.highcharts.com) for our graphs in the front-end. To round of we use the [Semantic-UI](TODOLINKNEEDED) CSS framework to give a consistent UI feel. To enable authentication we can leverage [PassportJS](http://www.passportjs.org) with a `passport-local-mongoose` strategy to enable the MongoDB to also function as sessions store and authentication database.
 
 ### PowerWindows and SmartWindows
 

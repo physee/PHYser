@@ -40,6 +40,9 @@
     "start": "node ./start.js",
     "dev": "nodemon ./start.js --ignore public/"
   },
+  "engines": {
+    "node": ">= 7.6.0"
+  },
   "author": "Pim Rutgers <pim@physee.eu> (https://github.com/physee)",
   "license": "AGPL-3.0"
 }
