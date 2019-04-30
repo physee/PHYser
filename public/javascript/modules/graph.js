@@ -77,7 +77,7 @@ function setStartAndEndDate(dateView, date) {
       break;
     case 'day':
       interval = 'hour';
-      startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0).getTime();
+      startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1, 0).getTime();
       endDate = date.getTime();
       break;
     default:

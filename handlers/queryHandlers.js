@@ -66,17 +66,16 @@ const getInterval = (query) => {
 
 const defineTime = (interval) => {
   // interval = year / month/ week/ day/ hour/ minute
-  const year = { $year: '$entry.data.time' };
-  const month = !(interval === 'year') ? { $month: '$entry.data.time' } : null;
-  const week = (interval === 'year') || (interval === 'month') ? null : {  $week: '$entry.data.time' } ;
-  const day = (interval === 'year') || (interval === 'month') || (interval === 'week') ? null : { $dayOfMonth: '$entry.data.time' };
-  const hour = (interval === 'hour') || (interval === 'minute') || (interval === 'live') ? { $hour: '$entry.data.time' } : null;
-  const minute = (interval === 'minute') || (interval === 'live') ? { $minute: '$entry.data.time' } : null;
+  const year = { $year: '$entry.time' };
+  const month = !(interval === 'year') ? { $month: '$entry.time' } : null;
+  const week = (interval === 'year') || (interval === 'month') ? null : {  $week: '$entry.time' } ;
+  const day = (interval === 'year') || (interval === 'month') || (interval === 'week') ? null : { $dayOfMonth: '$entry.time' };
+  const hour = (interval === 'hour') || (interval === 'minute') || (interval === 'live') ? { $hour: '$entry.time' } : null;
+  const minute = (interval === 'minute') || (interval === 'live') ? { $minute: '$entry.time' } : null;
   return { year, month, week, day, hour, minute };
 }
 
-
-const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes) => {
+const getStatsWindowMinute = async(nodeIds, startDate, endDate, interval, attributes) => {
   const { year, month, week, day, hour, minute } = defineTime(interval);
   const [ solar, cons, temp, lux, volt ] = attributes;
   const dataset = await Window.aggregate([
@@ -131,8 +130,7 @@ const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes)
       },
     },
     {
-      // separate entry.data
-      $unwind: '$entry.data'
+     $unwind: '$entry.data',
     },
     {
       $group: {
@@ -156,18 +154,19 @@ const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes)
             solar: '$entry.data.solar',
             cons: '$entry.data.cons',
             temp: '$entry.data.temp',
-            lux: '$entry.data.light.lux',
+            lux: '$entry.data.lux',
             volt: '$entry.data.volt',
-
+          
           },
         },
+  
       }
     },
     {
       $project: {
         _id: {
           id: '$_id.id',
-          name: '$_id.name',
+          name: '$_id.glassMerk',
           locationId: '$_id.location',
           nodeID: '$_id.sensor',
         },
@@ -221,7 +220,6 @@ const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes)
             },
           },
       },
-      windows: '$win',
       solar: {
         sum: {
           $cond: {
@@ -238,6 +236,7 @@ const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes)
             then: null,
             else: { $sum: cons }
           }
+          
         },
       },
       temp: {
@@ -302,8 +301,596 @@ const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes)
         $cond: [
           {
             $or: [
-              { $eq: ['$sum', null] },
-              { $eq: ['$avg', null] }
+              { $eq: [ '$sum', null ] },
+              { $eq: [ '$avg', null ] }
+            ]
+          },
+          '$$PRUNE',
+          '$$DESCEND'
+        ]
+      },
+    },
+    {
+      $sort: { 'timestamp': 1 }
+    },
+    {
+      $group: {
+        _id: {
+          id: '$_id.id',
+          name: '$_id.locationId',
+          glassMerk: '$_id.name',
+          nodeId: '$_id.nodID',
+        },
+        data: {
+          $push: {
+            time: '$timestamp',
+            windows: '$windows',
+            solar: {
+              sum: '$solar.sum',
+              unit: 'Wh',
+            },
+            cons: {
+              sum: '$cons.sum',
+              unit: 'Wh',
+            },
+            lux: {
+              avg: '$lux.avg',
+              max: '$lux.max',
+              min: '$lux.min',
+              unit: 'lx',
+            },
+            temp: {
+              avg: '$temp.avg',
+              max: '$temp.max',
+              min: '$temp.min',
+              unit: 'degree',
+            },
+            volt: {
+              avg: '$volt.avg',
+              max: '$volt.max',
+              min: '$volt.min',
+              unit: 'v',
+            }
+          }
+        }
+      }
+    },
+
+  ]);
+  return dataset;
+}
+const getStatsMinute = async (Database, nodeIds, startDate, endDate, interval, attributes) => {
+  const { year, month, week, day, hour, minute } = defineTime(interval);
+  const [ solar, cons, temp, lux, volt ] = attributes;
+  const dataset = await Database.aggregate([{
+    $lookup: {
+      from: 'windows',
+      localField: 'windowIds',
+      foreignField: '_id',
+      as: 'windows',
+    }
+  },
+  {
+    $unwind: '$windows',
+  },
+  {
+    // populate sensor data here to get nodeIds
+    $lookup: {
+      from: 'sensors',
+      localField: 'windows.sensorIds',
+      foreignField: '_id',
+      as: 'sensor',
+    }
+  },
+  {
+    // separate sensor data to get nodeId
+    $unwind: '$sensor'
+  },
+  {
+    // only get the windows with the correct nodeIds
+    $match: {
+      'sensor.nodeId': { $in: nodeIds },
+    },
+  },
+  {
+    // populate entry data here matching nodeId
+    $lookup: {
+      from: 'entries',
+      localField: 'sensor.nodeId',
+      foreignField: 'node_id',
+      as: 'entry',
+    }
+  },
+  {
+    // separate entry data
+    $unwind: '$entry'
+  },
+  {
+    // only get the data within startDate and endDate
+    $match: {
+      'entry.time': {
+        $gt: startDate,
+        $lte: endDate,
+      },
+    },
+  },
+  {
+    $unwind: '$entry.data',
+   },
+   {
+     $group: {
+       _id: {
+         // group the data acccording to installation/project id
+         id: '$_id',
+         name: '$glassMerk',
+         location:'$location.locationId',
+         sensor: '$sensor.nodeId',
+         year,
+         month,
+         week,
+         day,
+         hour,
+         minute,
+       },
+
+       // push all the time and energy data (from entry db) into an array
+       data: { $push :
+         {
+           solar: '$entry.data.solar',
+           cons: '$entry.data.cons',
+           temp: '$entry.data.temp',
+           lux: '$entry.data.lux',
+           volt: '$entry.data.volt',
+         
+         },
+       },
+ 
+     }
+   },
+   {
+     $project: {
+       _id: {
+         id: '$_id.id',
+         name: '$_id.glassMerk',
+         locationId: '$_id.location',
+         nodeID: '$_id.sensor',
+       },
+       time: {
+         $cond: {
+           // if interval = week, week has different operators than the rest
+           if: { $and: [{$eq: ['$_id.day', null]}, {$ne: ['$_id.week', null]}] },
+           then: {
+               $dateFromParts: {
+                 isoWeekYear: '$_id.year',
+                 isoWeek: { $sum: ['$_id.week', 1]},
+                 isoDayOfWeek: 1,
+                 hour: 0,
+                 minute: 0,
+                 second: 0
+               },
+           },
+           else: {
+             $dateFromParts: {
+               year: '$_id.year',
+               month: {
+                 $cond: {
+                   if: { $ne: ['$_id.month', null] },
+                   then: '$_id.month',
+                   else: 1,
+                 },
+               },
+               day: {
+                 $cond: {
+                   if: { $ne: ['$_id.day', null] },
+                   then: '$_id.day',
+                   else: 1,
+                 },
+               },
+               hour: {
+                 $cond: {
+                   if: { $ne: ['$_id.hour', null] },
+                   then: '$_id.hour',
+                   else: 0,
+                 },
+               },
+               minute: {
+                 $cond: {
+                  if: { $ne: ['$_id.minute', null] },
+                  then: '$_id.minute',
+                  else:  0,
+                 },
+               },
+               second: 0,
+             }
+           },
+         },
+     },
+     solar: {
+       sum: {
+         $cond: {
+           if: { $eq : [ solar, null ] },
+           then: null,
+           else: { $sum: solar }
+          }
+       },
+     },
+     cons: {
+       sum: {
+         $cond: {
+           if: { $eq : [ cons, null ] },
+           then: null,
+           else: { $sum: cons }
+         }
+         
+       },
+     },
+     temp: {
+       avg: { $avg: temp },
+       max: { $max: temp },
+       min: { $min: temp },
+     },
+     lux: {
+       avg: { $avg: lux },
+       min: { $min: lux },
+       max: { $max: lux },
+     },
+     volt: {
+       avg: { $avg: volt },
+       max: { $max: volt },
+       min: { $min: volt },
+     },
+
+     },
+   },
+   {
+     $project: {
+       _id: {
+         id: '$_id.id',
+         name: '$_id.name',
+         locationId: '$_id.location',
+         nodeID: '$_id.sensor',
+       },
+       timestamp: { $subtract: [ '$time', new Date("1970-01-01")]},
+       solar: {
+         sum: '$solar.sum',
+         unit: 'Wh',
+       },
+       cons: {
+         sum: '$cons.sum',
+         unit: 'Wh',
+       },
+       lux: {
+         avg: '$lux.avg',
+         max: '$lux.max',
+         min: '$lux.min',
+         unit: 'lx',
+       },
+       temp: {
+         avg: '$temp.avg',
+         max: '$temp.max',
+         min: '$temp.min',
+         unit: 'degree',
+       },
+       volt: {
+         avg: '$volt.avg',
+         max: '$volt.max',
+         min: '$volt.min',
+         unit: 'v',
+       }
+
+     }
+   },
+
+   {
+     $redact: {
+       $cond: [
+         {
+           $or: [
+             { $eq: [ '$sum', null ] },
+             { $eq: [ '$avg', null ] }
+           ]
+         },
+         '$$PRUNE',
+         '$$DESCEND'
+       ]
+     },
+   },
+   {
+     $sort: { 'timestamp': 1 }
+   },
+   {
+     $group: {
+       _id: {
+         id: '$_id.id',
+         name: '$_id.locationId',
+         glassMerk: '$_id.name',
+         nodeId: '$_id.nodID',
+       },
+       data: {
+         $push: {
+           time: '$timestamp',
+           windows: '$windows',
+           solar: {
+             sum: '$solar.sum',
+             unit: 'Wh',
+           },
+           cons: {
+             sum: '$cons.sum',
+             unit: 'Wh',
+           },
+           lux: {
+             avg: '$lux.avg',
+             max: '$lux.max',
+             min: '$lux.min',
+             unit: 'lx',
+           },
+           temp: {
+             avg: '$temp.avg',
+             max: '$temp.max',
+             min: '$temp.min',
+             unit: 'degree',
+           },
+           volt: {
+             avg: '$volt.avg',
+             max: '$volt.max',
+             min: '$volt.min',
+             unit: 'v',
+           }
+         }
+       }
+     }
+   },
+
+ ]);
+  return dataset;
+}
+
+const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes) => {
+  if (interval === 'minute') {
+    const dataset = await getStatsWindowMinute(nodeIds, startDate, endDate, interval, attributes);
+    return dataset;
+  }
+  const { year, month, week, day, hour, minute } = defineTime(interval);
+  const [ solar, cons, temp, lux, volt ] = attributes;
+  const dataset = await Window.aggregate([
+    {
+      // only get the windows with the correct nodeIds
+      $match: {
+        _id: { $in: nodeIds },
+      },
+    },
+    {
+      // populate sensor data here to get nodeIds
+      $lookup: {
+        from: 'sensors',
+        localField: 'sensorIds',
+        foreignField: '_id',
+        as: 'sensor',
+      }
+    },
+    {
+      // separate sensor data to get nodeId
+      $unwind: '$sensor'
+    },
+
+    {
+      $lookup: {
+        from: 'windowlocations',
+        localField: 'windowLocationId',
+        foreignField: '_id',
+        as: 'location',
+      }
+    },
+    {
+      // populate entry data here matching nodeId
+      $lookup: {
+        from: 'entries',
+        localField: 'sensor.nodeId',
+        foreignField: 'node_id',
+        as: 'entry',
+      }
+    },
+    {
+      // separate entry data
+      $unwind: '$entry'
+    },
+    {
+      // only get the data within startDate and endDate
+      $match: {
+        'entry.time': {
+          $gt: startDate,
+          $lte: endDate,
+        },
+      },
+    },
+    {
+     $project: {
+       'entry.sum': 1,
+       'entry.count': 1,
+       '_id': 1,
+       'glassMerk': 1,
+       'location': 1,
+       'sensor.nodeId': 1,
+       'entry.time': 1,
+     },
+    },
+    {
+      $group: {
+        _id: {
+          // group the data acccording to installation/project id
+          id: '$_id',
+          name: '$glassMerk',
+          location:'$location.locationId',
+          sensor: '$sensor.nodeId',
+          year,
+          month,
+          week,
+          day,
+          hour,
+          minute,
+        },
+
+        // push all the time and energy data (from entry db) into an array
+        data: { $push :
+          {
+            solar: '$entry.sum.solar',
+            cons: '$entry.sum.cons',
+            temp: '$entry.sum.temp',
+            lux: '$entry.sum.lux',
+            volt: '$entry.sum.volt',
+            count: '$entry.count',
+
+          },
+        },
+        temp_min: { $min: { $divide: ['$entry.sum.temp', '$entry.count'] }},
+        temp_max: { $max: { $divide: ['$entry.sum.temp', '$entry.count'] }},
+        lux_min: { $min: { $divide: ['$entry.sum.lux', '$entry.count'] }},
+        lux_max: { $max: { $divide: ['$entry.sum.lux', '$entry.count'] }},
+        volt_min: { $min: { $divide: ['$entry.sum.volt', '$entry.count'] }},
+        volt_max: { $max: { $divide: ['$entry.sum.volt', '$entry.count'] }},
+      }
+    },
+    {
+      $project: {
+        _id: {
+          id: '$_id.id',
+          name: '$_id.glassMerk',
+          locationId: '$_id.location',
+          nodeID: '$_id.sensor',
+        },
+        time: {
+          $cond: {
+            // if interval = week, week has different operators than the rest
+            if: { $and: [{$eq: ['$_id.day', null]}, {$ne: ['$_id.week', null]}] },
+            then: {
+                $dateFromParts: {
+                  isoWeekYear: '$_id.year',
+                  isoWeek: { $sum: ['$_id.week', 1]},
+                  isoDayOfWeek: 1,
+                  hour: 0,
+                  minute: 0,
+                  second: 0
+                },
+            },
+            else: {
+              $dateFromParts: {
+                year: '$_id.year',
+                month: {
+                  $cond: {
+                    if: { $ne: ['$_id.month', null] },
+                    then: '$_id.month',
+                    else: 1,
+                  },
+                },
+                day: {
+                  $cond: {
+                    if: { $ne: ['$_id.day', null] },
+                    then: '$_id.day',
+                    else: 1,
+                  },
+                },
+                hour: {
+                  $cond: {
+                    if: { $ne: ['$_id.hour', null] },
+                    then: '$_id.hour',
+                    else: 0,
+                  },
+                },
+                minute: {
+                  $cond: {
+                   if: { $ne: ['$_id.minute', null] },
+                   then: '$_id.minute',
+                   else:  0,
+                  },
+                },
+                second: 0,
+              }
+            },
+          },
+      },
+      solar: {
+        sum: {
+          $cond: {
+            if: { $eq : [ solar, null ] },
+            then: null,
+            else: { $divide: [{ $multiply: [ { $sum: solar }, 5 ] }, 60 ]}
+           }
+        },
+      },
+      cons: {
+        sum: {
+          $cond: {
+            if: { $eq : [ cons, null ] },
+            then: null,
+            else: { $divide: [{$multiply: [{ $sum: cons }, 5]}, 60] }
+          }
+          
+        },
+      },
+      temp: {
+        avg: { $divide: [ { $sum: temp }, { $sum: '$data.count' }] },
+        max: '$temp_max',
+        min: '$temp_min',
+      },
+      lux: {
+        avg: { $divide: [ { $sum: lux }, { $sum: '$data.count' }] },
+        min: '$lux_min',
+        max: '$lux_max',
+      },
+      volt: {
+        avg: { $divide: [ { $sum: volt }, { $sum: '$data.count' }] },
+        max: '$volt_max',
+        min: '$volt_min',
+      },
+
+      },
+    },
+    {
+      $project: {
+        _id: {
+          id: '$_id.id',
+          name: '$_id.name',
+          locationId: '$_id.location',
+          nodeID: '$_id.sensor',
+        },
+        timestamp: { $subtract: [ '$time', new Date("1970-01-01")]},
+        solar: {
+          sum: '$solar.sum',
+          unit: 'Wh',
+        },
+        cons: {
+          sum: '$cons.sum',
+          unit: 'Wh',
+        },
+        lux: {
+          avg: '$lux.avg',
+          max: '$lux.max',
+          min: '$lux.min',
+          unit: 'lx',
+        },
+        temp: {
+          avg: '$temp.avg',
+          max: '$temp.max',
+          min: '$temp.min',
+          unit: 'degree',
+        },
+        volt: {
+          avg: '$volt.avg',
+          max: '$volt.max',
+          min: '$volt.min',
+          unit: 'v',
+        }
+
+      }
+    },
+
+    {
+      $redact: {
+        $cond: [
+          {
+            $or: [
+              { $eq: [ '$sum', null ] },
+              { $eq: [ '$avg', null ] }
             ]
           },
           '$$PRUNE',
@@ -361,8 +948,11 @@ const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes)
   return dataset;
 }
 
-
 const getStats = async (Database, nodeIds, startDate, endDate, interval, attributes) => {
+  if (interval === 'minute') {
+    const dataset = await getStatsMinute(nodeIds, startDate, endDate, interval, attributes);
+    return dataset;
+  }
   const { year, month, week, day, hour, minute } = defineTime(interval);
   const [ solar, cons, temp, lux, volt ] = attributes;
   const dataset = await Database.aggregate([{
@@ -418,220 +1008,241 @@ const getStats = async (Database, nodeIds, startDate, endDate, interval, attribu
     },
   },
   {
-    // separate entry.data
-    $unwind: '$entry.data'
-  },
-  {
-    $group: {
-      _id: {
-        // group the data acccording to installation/project id
-        id: '$_id',
-        name: '$name',
-        year,
-        month,
-        week,
-        day,
-        hour,
-        minute,
-      },
-      // push all the time and energy data (from entry db) into an array
-
-      data: { $push:
-        {
-          solar: '$entry.data.solar',
-          cons: '$entry.data.cons',
-          temp: '$entry.data.temp',
-          lux: '$entry.data.light.lux',
-          volt: '$entry.data.volt',
-        },
-
-      },
-
-      win: { $addToSet :
-        {
-          glassMerk: '$windows.glassMerk',
-        },
-      },
-    },
-  },
-  {
     $project: {
-      _id: {
-        id: '$_id.id',
-        name: '$_id.name',
-      },
-      time: {
-        $cond: {
-          // if interval = week, week has different operators than the rest
-          if: { $and: [{$eq: ['$_id.day', null]}, {$ne: ['$_id.week', null]}] },
-          then: {
-              $dateFromParts: {
-                isoWeekYear: '$_id.year',
-                isoWeek: { $sum: ['$_id.week', 1]},
-                isoDayOfWeek: 1,
-                hour: 0,
-                minute: 0,
-                second: 0
-              },
-          },
-          else: {
-            $dateFromParts: {
-              year: '$_id.year',
-              month: {
-                $cond: {
-                  if: { $ne: ['$_id.month', null] },
-                  then: '$_id.month',
-                  else: 1,
-                },
-              },
-              day: {
-                $cond: {
-                  if: { $ne: ['$_id.day', null] },
-                  then: '$_id.day',
-                  else: 1,
-                },
-              },
-              hour: {
-                $cond: {
-                  if: { $ne: ['$_id.hour', null] },
-                  then: '$_id.hour',
-                  else: 0,
-                },
-              },
-              minute: {
-                $cond: {
-                 if: { $ne: ['$_id.minute', null] },
-                 then: '$_id.minute',
-                 else:  0,
-                },
-              },
-              second: 0,
-            }
-          },
-        },
+      'entry.sum': 1,
+      'entry.count': 1,
+      '_id': 1,
+      'name': 1,
+      'entry.time': 1,
     },
-    windows: '$win',
-    solar: {
-      sum: {
-        $cond: {
-          if: { $eq : [ solar, null ] },
-          then: null,
-          else: { $sum: solar }
-         }
-      },
-    },
-    cons: {
-      sum: {
-        $cond: {
-          if: { $eq : [ cons, null ] },
-          then: null,
-          else: { $sum: cons }
-        }
-      },
-    },
-    temp: {
-      avg: { $avg: temp },
-      max: { $max: temp },
-      min: { $min: temp },
-    },
-    lux: {
-      avg: { $avg: lux },
-      min: { $min: lux },
-      max: { $max: lux },
-    },
-    volt: {
-      avg: { $avg: volt },
-      max: { $max: volt },
-      min: { $min: volt },
-    },
+    
+   },
+   {
+     $group: {
+       _id: {
+         // group the data acccording to installation/project id
+         id: '$_id',
+         name: '$name',
+         year,
+         month,
+         week,
+         day,
+         hour,
+         minute,
+       },
 
-    },
-  },
-  {
-    $project: {
-      _id: {
-        id: '$_id.id',
-        name: '$_id.name',
-      },
+       // push all the time and energy data (from entry db) into an array
+       data: { $push :
+         {
+           solar: '$entry.sum.solar',
+           cons: '$entry.sum.cons',
+           temp: '$entry.sum.temp',
+           lux: '$entry.sum.lux',
+           volt: '$entry.sum.volt',
+           count: '$entry.count',
 
-    timestamp: { $subtract: [ '$time', new Date("1970-01-01")] },
-    windows: '$windows',
-    solar: { sum: '$solar.sum'},
-    cons: { sum: '$cons.sum' },
-    lux: {
-      avg: '$lux.avg',
-      max: '$lux.max',
-      min: '$lux.min',
-    },
-    temp: {
-      avg: '$temp.avg',
-      max: '$temp.max',
-      min: '$temp.min',
-    },
-    volt: {
-      avg: '$volt.avg',
-      max: '$volt.max',
-      min: '$volt.min',
-    }
-    }
-  },
-
-  {
-    $redact: {
-      $cond: [
-        {
-          $or: [
-            { $eq: ['$sum', null] },
-            { $eq: ['$avg', null] }
-          ]
-        },
-        '$$PRUNE',
-        '$$DESCEND'
-      ]
-    },
-  },
-  {
-    $sort: { 'timestamp': 1 }
-  },
-  {
-    $group: {
-      _id: {
-        id: '$_id.id',
-        name: '$_id.name',
-      },
-      data: {
-        $push: {
-          time: '$timestamp',
-          windows: '$windows',
-          solar: {
-            sum: '$solar.sum',
-            unit: 'Wh',
-          },
-          cons: {
-            sum: '$cons.sum',
-            unit: 'Wh',
-          },
-          lux: {
-            avg: '$lux.avg',
-            max: '$lux.max',
-            min: '$lux.min',
-            unit: 'lx',
-          },
-          temp: {
-            avg: '$temp.avg',
-            max: '$temp.max',
-            min: '$temp.min',
-            unit: 'degree',
-          },
-          volt: {
-            avg: '$volt.avg',
-            max: '$volt.max',
-            min: '$volt.min',
-            unit: 'v',
+         },
+       },
+       temp_min: { $min: { $divide: ['$entry.sum.temp', '$entry.count'] }},
+       temp_max: { $max: { $divide: ['$entry.sum.temp', '$entry.count'] }},
+       lux_min: { $min: { $divide: ['$entry.sum.lux', '$entry.count'] }},
+       lux_max: { $max: { $divide: ['$entry.sum.lux', '$entry.count'] }},
+       volt_min: { $min: { $divide: ['$entry.sum.volt', '$entry.count'] }},
+       volt_max: { $max: { $divide: ['$entry.sum.volt', '$entry.count'] }},
+     }
+   },
+   {
+     $project: {
+       _id: {
+         id: '$_id.id',
+         name: '$_id.glassMerk',
+         locationId: '$_id.location',
+         nodeID: '$_id.sensor',
+       },
+       time: {
+         $cond: {
+           // if interval = week, week has different operators than the rest
+           if: { $and: [{$eq: ['$_id.day', null]}, {$ne: ['$_id.week', null]}] },
+           then: {
+               $dateFromParts: {
+                 isoWeekYear: '$_id.year',
+                 isoWeek: { $sum: ['$_id.week', 1]},
+                 isoDayOfWeek: 1,
+                 hour: 0,
+                 minute: 0,
+                 second: 0
+               },
+           },
+           else: {
+             $dateFromParts: {
+               year: '$_id.year',
+               month: {
+                 $cond: {
+                   if: { $ne: ['$_id.month', null] },
+                   then: '$_id.month',
+                   else: 1,
+                 },
+               },
+               day: {
+                 $cond: {
+                   if: { $ne: ['$_id.day', null] },
+                   then: '$_id.day',
+                   else: 1,
+                 },
+               },
+               hour: {
+                 $cond: {
+                   if: { $ne: ['$_id.hour', null] },
+                   then: '$_id.hour',
+                   else: 0,
+                 },
+               },
+               minute: {
+                 $cond: {
+                  if: { $ne: ['$_id.minute', null] },
+                  then: '$_id.minute',
+                  else:  0,
+                 },
+               },
+               second: 0,
+             }
+           },
+         },
+     },
+     solar: {
+       sum: {
+         $cond: {
+           if: { $eq : [ solar, null ] },
+           then: null,
+           else: { $divide: [{ $multiply: [ { $sum: solar }, 5 ] }, 60 ]}
           }
-        }
-      }
-    }
+       },
+     },
+     cons: {
+       sum: {
+         $cond: {
+           if: { $eq : [ cons, null ] },
+           then: null,
+           else: { $divide: [{$multiply: [{ $sum: cons }, 5]}, 60] }
+         }
+         
+       },
+     },
+     temp: {
+       avg: { $divide: [ { $sum: temp }, { $sum: '$data.count' }] },
+       max: '$temp_max',
+       min: '$temp_min',
+     },
+     lux: {
+       avg: { $divide: [ { $sum: lux }, { $sum: '$data.count' }] },
+       min: '$lux_min',
+       max: '$lux_max',
+     },
+     volt: {
+       avg: { $divide: [ { $sum: volt }, { $sum: '$data.count' }] },
+       max: '$volt_max',
+       min: '$volt_min',
+     },
+
+     },
+   },
+   {
+     $project: {
+       _id: {
+         id: '$_id.id',
+         name: '$_id.name',
+         locationId: '$_id.location',
+         nodeID: '$_id.sensor',
+       },
+       timestamp: { $subtract: [ '$time', new Date("1970-01-01")]},
+       solar: {
+         sum: '$solar.sum',
+         unit: 'Wh',
+       },
+       cons: {
+         sum: '$cons.sum',
+         unit: 'Wh',
+       },
+       lux: {
+         avg: '$lux.avg',
+         max: '$lux.max',
+         min: '$lux.min',
+         unit: 'lx',
+       },
+       temp: {
+         avg: '$temp.avg',
+         max: '$temp.max',
+         min: '$temp.min',
+         unit: 'degree',
+       },
+       volt: {
+         avg: '$volt.avg',
+         max: '$volt.max',
+         min: '$volt.min',
+         unit: 'v',
+       }
+
+     }
+   },
+
+   {
+     $redact: {
+       $cond: [
+         {
+           $or: [
+             { $eq: ['$sum', null] },
+             { $eq: ['$avg', null] }
+           ]
+         },
+         '$$PRUNE',
+         '$$DESCEND'
+       ]
+     },
+   },
+   {
+     $sort: { 'timestamp': 1 }
+   },
+   {
+     $group: {
+       _id: {
+         id: '$_id.id',
+         name: '$_id.locationId',
+         glassMerk: '$_id.name',
+         nodeId: '$_id.nodID',
+       },
+       data: {
+         $push: {
+           time: '$timestamp',
+           windows: '$windows',
+           solar: {
+             sum: '$solar.sum',
+             unit: 'Wh',
+           },
+           cons: {
+             sum: '$cons.sum',
+             unit: 'Wh',
+           },
+           lux: {
+             avg: '$lux.avg',
+             max: '$lux.max',
+             min: '$lux.min',
+             unit: 'lx',
+           },
+           temp: {
+             avg: '$temp.avg',
+             max: '$temp.max',
+             min: '$temp.min',
+             unit: 'degree',
+           },
+           volt: {
+             avg: '$volt.avg',
+             max: '$volt.max',
+             min: '$volt.min',
+             unit: 'v',
+           }
+         }
+       }
+     }
    },
 
   ]);
