@@ -4,7 +4,6 @@ const Installation = entryDb.model('Installation');
 const Project = entryDb.model('Project');
 const Window = entryDb.model('Window');
 const Area = entryDb.model('Area');
-const User = entryDb.model('User');
 
 // some setting/rules
 

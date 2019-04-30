@@ -5,10 +5,20 @@ html
       link(rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.1/semantic.min.css")
       link(rel="stylesheet" type="text/css" href="/dist/style.css")
       link(rel="stylesheet" href="https://use.typekit.net/sjm2luv.css")
+      script(src='https://unpkg.com/axios/dist/axios.min.js')
+      
+      script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js")
+      script(src='https://code.highcharts.com/highcharts.js')
       title= `${title}`
   body
     .app-header
+      h4 Header
     .app-cotent
       block content
         head.ui.three.item.menu.secondary.huge.fixed
         h1 You seem to have navigated to a page without content
+      
+      
+      
+      block scripts
+        script(type= 'module' src='/javascript/EESYapp.js')

@@ -1,6 +1,8 @@
 const { DateTime } = require('luxon');
 const mongoose = require('mongoose');
 const { idFormatting, calculateDuration, defineScope, defineAttributes } = require('../handlers/rulesHandlers');
+const { entryDb } = require('../handlers/dbConnections');
+const Window = entryDb.model('Window');
 
 exports.queryStats = async (scope, id, query) => {
   const Database = defineScope(scope);
@@ -10,7 +12,7 @@ exports.queryStats = async (scope, id, query) => {
   const attributes = defineAttributes(query);
   // 2. start query
   const result = (scope === 'window') ? await getStatsWindow(nodeIds, sd, ed, checkedInterval, attributes) : await getStats(Database, nodeIds, sd, ed, checkedInterval, attributes);
-  // 3. 'clean' the returned data
+
   return result;
 };
 
@@ -357,7 +359,6 @@ const getStatsWindow = async (nodeIds, startDate, endDate, interval, attributes)
     },
 
   ]);
-
   return dataset;
 }
 

@@ -1,3 +1,18 @@
 extends layout
 block content
-    p It works
+    h5=title
+    div View
+      #windowView.ui.button Windows
+      #areaView.ui.button Area
+      #projectView.ui.button Project
+
+    div Interval
+      #year.ui.button Year
+      #month.ui.button Month
+      #week.ui.button Week
+      #day.ui.button Day
+
+
+    div
+      .ui.calendar
+    #container
