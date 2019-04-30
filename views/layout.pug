@@ -5,18 +5,32 @@ html
       link(rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.1/semantic.min.css")
       link(rel="stylesheet" type="text/css" href="/dist/style.css")
       link(rel="stylesheet" href="https://use.typekit.net/sjm2luv.css")
+      link(href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet")
+      link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/semantic-ui-calendar/0.0.8/calendar.min.css')
       script(src='https://unpkg.com/axios/dist/axios.min.js')
-      
       script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js")
+      script(src="http://cdn.staticfile.org/semantic-ui/2.2.7/semantic.min.js")
       script(src='https://code.highcharts.com/highcharts.js')
+      script(src='https://cdnjs.cloudflare.com/ajax/libs/semantic-ui-calendar/0.0.8/calendar.js')
+      
       title= `${title}`
+  
   body
-    .app-header
-      h4 Header
-    .app-cotent
-      block content
-        head.ui.three.item.menu.secondary.huge.fixed
-        h1 You seem to have navigated to a page without content
+    .app-wrapper
+      block header
+        .app-header
+          #head.ui.two.item.menu.secondary.huge.fixed
+            #left.item
+              i.icon
+               != h.icon('physee_logo') 
+            #right.item
+              h4=`${title}`
+                    
+             
+      .app-content
+        .ui.main
+          block content
+            
       
       
       

@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const passport = require('passport');
 const errorHandlers = require('./handlers/errorHandlers');
+const helper = require('./helper');
 
 const app = express();
 // CORS
@@ -22,7 +23,10 @@ app.use(bodyParser.json());
 
 // Exposes a bunch of methods for validating data. Used heavily on userController.validateRegister
 app.use(expressValidator());
-
+app.use((req, res, next) => {
+  res.locals.h = helper;
+  next();
+});
 // Import the routes
 const routes = require('./routes/index');
 // and use them!

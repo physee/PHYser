@@ -1,3 +1,4 @@
+// possible security risk, if other id is known, people can get other data from our database
 const PROJECT = '5c8fd50a5dcaa32bb21b7a43';
 const AREA_A = '5c94bb6780f6f4143fcb330c';
 const AREA_B = '5c94b4c7ff642c13470f1d79';
@@ -9,25 +10,55 @@ const WIN_D = '5c8fd46f5dcaa32bb21b7a34';
 const WIN_E = '5c8fd47b5dcaa32bb21b7a36';
 const WIN_G = '5c93a46d92cdcd02c63492f5';
 
-
-let dateView = 'day';
+let dateView = 'week';
 let view = 'window';
 
+$('#windowView').on('click', () => {
+    const date= $('#date').calendar('get date');
+    view = 'window';
+    updateChart(view, dateView, date);
+  
+})
+     
+  $('#areaView').on('click',() => {
+    const date= $('#date').calendar('get date');
+    view = 'area'
+    updateChart(view, dateView, date);
+})
+  
+  $('#projectView').on('click', () => {
+    const date= $('#date').calendar('get date');
+    view = 'installation'
+    updateChart(view, dateView, date);
+})
+$('#date').calendar({
+    type: 'date',
+    today: true,
+    maxDate: new Date(),
+    onChange: date => {
+        updateChart(view, dateView, date);
+    }
+});
+
 $('#year').on('click', () => {
+  const date= $('#date').calendar('get date');
   dateView = 'year';
-  updateChart(view, dateView);
+  updateChart(view, dateView, date);
 })
 $('#month').on('click', () => {
+  const date= $('#date').calendar('get date');
   dateView = 'month';
-  updateChart(view, dateView);
+  updateChart(view, dateView, date);
 });
 $('#week').on('click', () => {
+  const date= $('#date').calendar('get date');
   dateView = 'week';
-  updateChart(view, dateView);
+  updateChart(view, dateView, date);
 });
 $('#day').on('click', () => {
+  const date= $('#date').calendar('get date');
   dateView = 'day';
-  updateChart(view, dateView);
+  updateChart(view, dateView, date);
 });
 
 function removeChart() {
@@ -35,39 +66,41 @@ function removeChart() {
   charts.remove();
 }
 
-function setStartAndEndDate(dateView) {
+function setStartAndEndDate(dateView, date) {
   let startDate;
-  let endDate = new Date();
+  let endDate;
   let interval;
   switch(dateView) {
     case 'year':
       interval =  'month';
-      startDate = new Date(endDate.getFullYear(), 0, 1).getTime();
-      endDate = endDate.getTime();
+      startDate = new Date(date.getFullYear(), 0, 1).getTime();
+      endDate = new Date(date.getFullYear(), 11, 31).getTime();
       break;
     case 'month':
       interval = 'day';
-      startDate =  new Date(endDate.getFullYear(), endDate.getMonth(), 1).getTime();
-      endDate = endDate.getTime();
+      startDate =  new Date(date.getFullYear(), date.getMonth(), 1).getTime();
+      endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0).getTime();
       break;
     case 'week': 
       interval = 'day';
-      const weekDay = endDate.getDay();
-      startDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate() - weekDay + (weekDay === 0 ?  -6 : 1)).getTime();
-      endDate = endDate.getTime();
+      const weekDay = date.getDay();
+      startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() - weekDay + (weekDay === 0 ?  -6 : 1)).getTime();
+      endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() - weekDay + (weekDay === 0 ?  -6 : 1) + 6 ).getTime();
       break;
     case 'day':
       interval = 'hour';
-      startDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 0).getTime();
-      endDate = endDate.getTime();
+      startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0).getTime();
+      endDate = date.getTime();
       break;
     default:
-      interval = 'hour';
-      startDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 0).getTime();
-      endDate = endDate.getTime();
+      interval = 'day';
+      startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() - weekDay + (weekDay === 0 ?  -6 : 1)).getTime();
+      endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() - weekDay + (weekDay === 0 ?  -6 : 1) + 6 ).getTime();
       break;
     
   }
+  const today = new Date().getTime();
+  endDate = endDate > today ? today : endDate;
   return { interval, startDate, endDate };
 }
 
@@ -75,7 +108,6 @@ function getRequest(url) {
   axios
     .get(url)
     .then(res => {
-        console.log(res.data);
         drawGraph(res.data);
     })
     .catch(err => {
@@ -85,13 +117,14 @@ function getRequest(url) {
 }
 
 function initializeChart () {
-  const { interval, startDate, endDate } = setStartAndEndDate('day');
+  const date= $('#date').calendar('get date');
+  const { interval, startDate, endDate } = setStartAndEndDate('week', date);
   const url = formulateQueryUrl(interval, startDate, endDate, 'window');
   getRequest(url);
 }
 
-function updateChart(view, dateView) {
-    const { interval, startDate, endDate } = setStartAndEndDate(dateView);
+function updateChart(view, dateView , date) {
+    const { interval, startDate, endDate } = setStartAndEndDate(dateView, date);
     const url = formulateQueryUrl(interval, startDate, endDate, view);
     removeChart();
     getRequest(url);
@@ -124,45 +157,22 @@ function formulateQueryUrl(interval, startDate, endDate, view) {
 }
 
 
-
-
-
-$(function () {
-    initializeChart(dateView);
-});
-
-$('#windowView').on('click', async () => {
-  view = 'window';
-  updateChart(view, dateView);
-
-})
-   
-$('#areaView').on('click', async () => {
-  view = 'area'
-  updateChart(view, dateView);
-})
-
-$('#projectView').on('click', async () => {
-  view = 'installation'
-  updateChart(view, dateView);
-})
-
 function structureData(series) {
   const production = [];
   const lux = [];
-  const volt = [];
+  const temp = [];
   const cons = [];
   const datasets = [];
   
   series.forEach(serie => {
-    production.push({parameter: 'solar', name: serie._id.name, unit: serie.data[0].solar.unit ,data: serie.data.map(d => [d.time, d.solar.sum])});
-    cons.push({parameter: 'consumption', name: serie._id.name, unit: serie.data[0].cons.unit ,data: serie.data.map(d => [d.time, d.cons.sum])})
-    lux.push({parameter: 'light intensity', name: serie._id.name, unit: serie.data[0].lux.unit ,data: serie.data.map(d => [d.time, d.lux.avg])})
-    volt.push({parameter: 'volt', name: serie._id.name, unit: serie.data[0].volt.unit, data: serie.data.map(d => [d.time, d.volt.avg])});
+    production.push({parameter: 'Solar', name: serie._id.name, unit: serie.data[0].solar.unit ,data: serie.data.map(d => [d.time, d.solar.sum])});
+    cons.push({parameter: 'Consumption', name: serie._id.name, unit: serie.data[0].cons.unit ,data: serie.data.map(d => [d.time, d.cons.sum])})
+    lux.push({parameter: 'Light intensity', name: serie._id.name, unit: serie.data[0].lux.unit ,data: serie.data.map(d => [d.time, d.lux.avg])})
+    temp.push({parameter: 'Temperature', name: serie._id.name, unit: ' ℃', data: serie.data.map(d => [d.time, d.temp.avg])});
 
   });
   
-  datasets.push([production, cons, lux, volt]);
+  datasets.push([production, cons, lux, temp]);
   return datasets;
   
 }
@@ -188,7 +198,7 @@ function drawGraph(data) {
      
       const chart = new Highcharts.chart(chartDiv, {
             chart: {
-              marginLeft: 40, // Keep all charts left aligned
+              marginLeft: 40, 
               spacingTop: 20,
               spacingBottom: 20
           },
@@ -196,23 +206,39 @@ function drawGraph(data) {
               text: parameter[0].parameter,
               align: 'left',
               margin: 0,
-              x: 30
+              x: 30,
+              style: {
+                fontFamily: 'Museo-Sans',
+                fontWeight: 100,
+                fontSize: '2em',
+                color: '#636363',
+              }
           },
           credits: {
               enabled: false
           },
           legend: {
-              enabled: true
+              enabled: true,
+              style: {
+                fontFamily: 'Roboto',
+                fontWeight: 100,
+                fontSize: '1em',
+                color: '#636363',
+              }
+              
           },
           xAxis: {
               type: 'datetime',
               labels: {
                 formatter: dateLabel,
+                style: {
+                    fontFamily: 'Roboto',
+                    fontWeight: 300,
+                    fontSize: '1em',
+                    color: '#636363',
+                  }
               },
               crosshair: true,
-              events: {
-                  setExtremes: syncExtremes
-              },
               
           },
           yAxis: {
@@ -234,54 +260,35 @@ function drawGraph(data) {
               headerFormat: '',
               shadow: false,
               style: {
-                  fontSize: '18px'
+                fontFamily: 'Museo-Sans',
+                fontWeight: 300,
+                fontSize: '2em',
+                color: '#636363',
               },
               // valueDecimals: dataset.valueDecimals
           },
           series: series
-           
-  
-        
           });
-         
         }) 
-       
-    })
-    
-     
+    })   
 }
 // make the line into curves
 Highcharts.seriesTypes.line.prototype.getPointSpline = Highcharts.seriesTypes.spline.prototype.getPointSpline;
-
+Highcharts.setOptions({
+    colors: ['#7FD6DB', '#50B432', '#ED561B', '#DDDF00', '#24CBE5', '#64E572', '#FF9655', '#FFF263', '#6AF9C4']
+});
   // Override the reset function, for not hiding the tooltips or crosshairs
-  Highcharts.Pointer.prototype.reset = function () {
-    return undefined;
-  };
-  // highlight a point by showing tooltips, setting hover state & draw crosshairs
-  Highcharts.Point.prototype.highlight = function (event) {
-    event = this.series.chart.pointer.normalize(event);
-    this.onMouseOver(); // Show the hover marker
-    this.series.chart.tooltip.refresh(this); // Show the tooltip
-    this.series.chart.xAxis[0].drawCrosshair(event, this); // Show the crosshair
-  };
-function syncExtremes(e) {
-  const thisChart = this.chart;
-  if (e.trigger !== 'syncExtremes') { // Prevent feedback loop
-    Highcharts.each(Highcharts.charts, function (chart) {
-      if (chart !== thisChart) {
-        if (chart.xAxis[0].setExtremes) { // It is null while updating
-          chart.xAxis[0].setExtremes(
-            e.min,
-            e.max,
-            undefined,
-            false,
-            { trigger: 'syncExtremes' }
-          );
-        }
-      }
-    });
-  }
+Highcharts.Pointer.prototype.reset = function () {
+  return undefined;
 };
+// highlight a point by showing tooltips, setting hover state & draw crosshairs
+Highcharts.Point.prototype.highlight = function (event) {
+  event = this.series.chart.pointer.normalize(event);
+  this.onMouseOver(); // Show the hover marker
+  this.series.chart.tooltip.refresh(this); // Show the tooltip
+  this.series.chart.xAxis[0].drawCrosshair(event, this); // Show the crosshair
+};
+
 
 function dateLabel() {
   let dateLabel;
@@ -290,10 +297,10 @@ function dateLabel() {
       dateLabel = Highcharts.dateFormat('%Y %b', this.value);
       break;
     case 'month':
-      dateLabel =  Highcharts.dateFormat('%Y %b %e', this.value);
+      dateLabel =  Highcharts.dateFormat('%b %e', this.value);
       break;
     case 'week':
-      dateLabel = Highcharts.dateFormat('%Y %b %e', this.value);
+      dateLabel = Highcharts.dateFormat('%b %e', this.value);
       break;
     case 'day':
       dateLabel = Highcharts.dateFormat('%b %e %H', this.value);
@@ -305,5 +312,10 @@ function dateLabel() {
     return dateLabel;
 
 }
+
+
+
+
+
 
 export default initializeChart;
