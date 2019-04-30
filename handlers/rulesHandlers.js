@@ -1,9 +1,9 @@
 const { Duration } = require('luxon');
-const { entryDb } = require('../handlers/dbConnections');
-const Installation = entryDb.model('Installation');
-const Project = entryDb.model('Project');
-const Window = entryDb.model('Window');
-const Area = entryDb.model('Area');
+const mongoose = require('mongoose');
+const Installation = mongoose.model('Installation');
+const Project = mongoose.model('Project');
+const Window = mongoose.model('Window');
+const Area = mongoose.model('Area');
 
 // some setting/rules
 
@@ -80,4 +80,42 @@ exports.idFormatting = (id) => {
   }
   return id;
 };
-  
+
+exports.getDefaultIds = async (user, scope) => {
+  // if there is no id supplied, get all the ids belonged to the user in the scope
+  const installation = await Installation.find({ _id: { $in: user.installationIds } });
+  const windowIds = [];
+  installation.forEach(i => {
+    i.windowIds.forEach(win => {
+      windowIds.push(win)
+    })
+  });
+  const areaIds = [];
+  installation.forEach(i => {
+    i.areaIds.forEach(area => {
+      areaIds.push(area)
+    })
+  });
+
+  let ids;
+  switch(scope) {
+    case 'project':
+      ids = user.projectIds;
+      break;
+    case 'installation':
+      ids = user.installationIds;
+      break;
+    case 'area':
+      ids = areaIds;
+      break;
+    case 'window':
+      ids = windowIds;
+      break;
+    case 'user':
+      ids = [user._id];
+      break;
+    default:
+      ids = user.installationIds;
+  }
+  return ids;
+}

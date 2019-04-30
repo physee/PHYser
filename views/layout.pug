@@ -19,12 +19,21 @@ html
     .app-wrapper
       block header
         .app-header
-          #head.ui.two.item.menu.secondary.huge.fixed
+          #head.ui.three.item.menu.secondary.huge.fixed
             #left.item
               i.icon
                != h.icon('physee_logo') 
-            #right.item
+            .item
               h4=`${title}`
+            
+            #right.item
+              if user
+                a(href='/logout')
+                 span LogOut
+              else
+                a(href='/login')
+                  span LogIn
+              
                     
              
       .app-content

@@ -1,15 +1,3 @@
-// possible security risk, if other id is known, people can get other data from our database
-const PROJECT = '5c8fd50a5dcaa32bb21b7a43';
-const AREA_A = '5c94bb6780f6f4143fcb330c';
-const AREA_B = '5c94b4c7ff642c13470f1d79';
-const AREA_C = '5c94bb6c80f6f4143fcb330d';
-const WIN_A = '5c8fd4955dcaa32bb21b7a39';
-const WIN_B = '5c8fd4535dcaa32bb21b7a32';
-const WIN_C = '5c8fd4b25dcaa32bb21b7a3b';
-const WIN_D = '5c8fd46f5dcaa32bb21b7a34';
-const WIN_E = '5c8fd47b5dcaa32bb21b7a36';
-const WIN_G = '5c93a46d92cdcd02c63492f5';
-
 let dateView = 'week';
 let view = 'window';
 
@@ -130,29 +118,9 @@ function updateChart(view, dateView , date) {
     getRequest(url);
 }
 
-function getIds(view) { 
-  let ids;
-  switch(view) {
-    case 'window':
-      ids= [WIN_A, WIN_B, WIN_C, WIN_D, WIN_E, WIN_G];
-      break;
-    case 'area':
-      ids= [AREA_A, AREA_B, AREA_C];
-      break;
-    case 'installation':
-      ids= [PROJECT];
-      break;
-    default:
-      ids= [PROJECT];
-    
-  }
-  return ids;
-}
-
 function formulateQueryUrl(interval, startDate, endDate, view) {
-    const baseUrl = 'http://localhost:8080';
-    const ids = getIds(view);
-    return `${baseUrl}/${view}/${ids}/stats?startDate=${startDate}&endDate=${endDate}&interval=${interval}`;
+    const baseUrl = 'http://localhost:7777';
+    return `${baseUrl}/${view}/stats?startDate=${startDate}&endDate=${endDate}&interval=${interval}`;
     
 }
 
@@ -172,7 +140,7 @@ function structureData(series) {
 
   });
   
-  datasets.push([production, cons, lux, temp]);
+  datasets.push([production, lux, temp, cons]);
   return datasets;
   
 }
@@ -200,7 +168,8 @@ function drawGraph(data) {
             chart: {
               marginLeft: 40, 
               spacingTop: 20,
-              spacingBottom: 20
+              spacingBottom: 20,
+              height: 300.
           },
           title: {
               text: parameter[0].parameter,

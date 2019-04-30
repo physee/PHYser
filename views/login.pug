@@ -1,0 +1,16 @@
+extends layout
+block content 
+  .ui.container
+    form.form(action="/login" method="POST")
+      h3 Login
+      .ui.form.account  
+        .field
+          .ui.labeled.input.login
+            label(for="email") Email
+            input(type="email" name="email")
+        .field
+          .ui.labeled.input.login
+            label(for="password") Password
+            input(type="password" name="password")
+        .field
+          input.ui.button.primary(type="submit" value="Log In →")

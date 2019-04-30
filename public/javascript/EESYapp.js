@@ -2,5 +2,5 @@
 
 import initializeChart from './modules/graph.js';
 
-initializeChart();
+initializeChart($('#graph'));
 

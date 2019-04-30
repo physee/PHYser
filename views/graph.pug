@@ -1,28 +1,29 @@
 extends layout
 block content
-  .ui.container
-    h1 Living Lab
-    
-    .column
-      #date.ui.calendar
-        .ui.input.left.icon
-          - var date = new Date('2019-04-05');
-          input(type='text' value= (date))
-         
-    .column
-      .ui.basic.buttons
-        #windowView.ui.button Windows
-        #areaView.ui.button Façades
-        #projectView.ui.button Living Lab
-
-    
-      .ui.basic.buttons
-        #year.ui.button Year
-        #month.ui.button Month
-        #week.ui.button Week
-        #day.ui.button Day
-
-
-    
-
-    #container
+  #graph
+    .ui.container
+      h1 Living Lab
+      
+      .column
+        #date.ui.calendar
+          .ui.input.left.icon
+            - var date = new Date('2019-04-05');
+            input(type='text' value= (date))
+           
+      .column
+        .ui.basic.buttons
+          #windowView.ui.button Windows
+          #areaView.ui.button Façades
+          #projectView.ui.button Living Lab
+  
+      
+        .ui.basic.buttons
+          #year.ui.button Year
+          #month.ui.button Month
+          #week.ui.button Week
+          #day.ui.button Day
+  
+  
+      
+  
+      #container

@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { entryDb } = require('../handlers/dbConnections');
 mongoose.Promise = global.Promise;
 
 const windowSchema = new mongoose.Schema({
@@ -41,4 +40,4 @@ const windowSchema = new mongoose.Schema({
 });
 // windowSchema.virtual('type.windowType').get(() => this.type.name);
 
-module.exports = entryDb.model('Window', windowSchema);
+module.exports = mongoose.model('Window', windowSchema);

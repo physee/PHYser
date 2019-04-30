@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { entryDb } = require('../handlers/dbConnections');
+
 
 const dataSchema = new mongoose.Schema({
   time: Date,
@@ -37,4 +37,4 @@ const entrySchema = new mongoose.Schema({
   }
 });
 
-module.exports = entryDb.model('Entry', entrySchema);
+module.exports = mongoose.model('Entry', entrySchema);

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { entryDb } = require('../handlers/dbConnections');
+
 
 const projectSchema = new mongoose.Schema({
   name: {
@@ -69,4 +69,4 @@ const projectSchema = new mongoose.Schema({
 
 });
 
-module.exports = entryDb.model('Project', projectSchema);
+module.exports = mongoose.model('Project', projectSchema);

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { entryDb } = require('../handlers/dbConnections');
+
 
 const installationSchema = new mongoose.Schema({
   name: String,
@@ -13,12 +13,6 @@ const installationSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  // userIds: [
-  //   {
-  //     type: mongoose.Schema.Types.ObjectId,
-  //     ref: 'User',
-  //   },
-  // ],
   projectId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Project',
@@ -63,4 +57,4 @@ const installationSchema = new mongoose.Schema({
   ],
 });
 
-module.exports = entryDb.model('Installation', installationSchema);
+module.exports = mongoose.model('Installation', installationSchema);

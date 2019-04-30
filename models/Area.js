@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { entryDb } = require('../handlers/dbConnections');
+
 
 const areaSchema = new mongoose.Schema({
     name: String,
@@ -39,4 +39,4 @@ const areaSchema = new mongoose.Schema({
     ],
   });
 
-module.exports = entryDb.model('Area', areaSchema);
+module.exports = mongoose.model('Area', areaSchema);

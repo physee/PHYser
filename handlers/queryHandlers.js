@@ -1,8 +1,7 @@
 const { DateTime } = require('luxon');
 const mongoose = require('mongoose');
 const { idFormatting, calculateDuration, defineScope, defineAttributes } = require('../handlers/rulesHandlers');
-const { entryDb } = require('../handlers/dbConnections');
-const Window = entryDb.model('Window');
+const Window = mongoose.model('Window');
 
 exports.queryStats = async (scope, id, query) => {
   const Database = defineScope(scope);

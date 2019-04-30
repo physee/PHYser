@@ -1,13 +1,21 @@
 const express = require('express');
 const path = require('path');
-const expressValidator = require('express-validator');
+const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const passport = require('passport');
+const flash = require('connect-flash');
+const expressValidator = require('express-validator');
+const promisify = require('es6-promisify');
+const routes = require('./routes/index');
 const errorHandlers = require('./handlers/errorHandlers');
 const helper = require('./helper');
+const sessionMiddleware = require('./handlers/sessionMiddleware');
+
+require('./handlers/passport');
 
 const app = express();
+
 // CORS
 app.use(cors());
 // enable pre-flight request
@@ -21,20 +29,33 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Exposes a bunch of methods for validating data. Used heavily on userController.validateRegister
 app.use(expressValidator());
+
+app.use(cookieParser());
+
+app.use(sessionMiddleware);
+app.use(flash())
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+
 app.use((req, res, next) => {
   res.locals.h = helper;
+  res.locals.flashes = req.flash();
+  res.locals.user = req.user || null;
   next();
 });
-// Import the routes
-const routes = require('./routes/index');
-// and use them!
-// all the routes with in v1 need to go through the authentication process by sending token
+
+// app.use((req, res, next) => {
+//   req.login = promisify(req.login, req);
+//   next();
+// });
+
 app.use('/', routes);
 // If that above routes didnt work, we 404 them and forward to error handler
 app.use(errorHandlers.notFound);
-
+app.use(errorHandlers.flashValidationErrors);
 // Otherwise this was a really bad error we didn't expect!
 if (app.get('env') === 'development') {
   /* Development Error Handler - Prints stack trace */
