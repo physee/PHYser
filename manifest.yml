@@ -1,0 +1,5 @@
+---
+applications:
+ - name: MongoDB Hackathon
+   host: hackathon
+   memory: 256M
